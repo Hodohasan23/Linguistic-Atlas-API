@@ -6,6 +6,9 @@ router = APIRouter(tags=["Languages"])
 languages_df = pd.read_csv("data/raw/languages.csv")
 names_df = pd.read_csv("data/raw/names.csv")
 
+# Replace NaN with None so JSON can handle it
+languages_df = languages_df.replace({np.nan: None})
+names_df = names_df.replace({np.nan: None})
 
 @router.get("/languages")
 def get_languages(limit: int = 20, offset: int = 0):
