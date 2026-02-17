@@ -81,3 +81,17 @@ def search_languages(
 
     result = paginate(result, limit, offset)
     return result.to_dict(orient="records")
+
+@router.get("/languages/{language_id}")
+def get_language(language_id: str):
+    row = get_language_row(language_id)
+    return row.to_dict()
+
+
+@router.get("/languages/{language_id}/names")
+def get_language_names(language_id: str):
+    _ = get_language_row(language_id)
+
+    result = names_df[names_df["Language_ID"] == language_id]
+    return result.to_dict(orient="records")
+
