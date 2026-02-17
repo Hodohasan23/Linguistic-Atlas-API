@@ -95,3 +95,89 @@ def get_language_names(language_id: str):
     result = names_df[names_df["Language_ID"] == language_id]
     return result.to_dict(orient="records")
 
+@router.get("/languages/{language_id}/classification")
+def get_language_classification(language_id: str):
+    current = get_language_row(language_id)
+
+    classification = [
+        {
+            "id": current["ID"],
+            "name": current["Name"],
+            "level": current["Level"],
+        }
+    ]
+
+    visited = set()
+    parent_id = current["Family_ID"]
+
+    while parent_id is not None:
+        if parent_id in visited:
+            break
+        visited.add(parent_id)
+
+        parent_rows = languages_df[languages_df["ID"] == parent_id]
+        if parent_rows.empty:
+            break
+
+        parent = parent_rows.iloc[0]
+        classification.append(
+            {
+                "id": parent["ID"],
+                "name": parent["Name"],
+                "level": parent["Level"],
+            }
+        )
+        parent_id = parent["Family_ID"]
+
+    classification.reverse()
+
+    return {
+        "language_id": current["ID"],
+        "language_name": current["Name"],
+        "classification": classification,
+    }
+
+
+@router.get("/families")
+def get_families(
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+):
+    result = languages_df[
+        languages_df["Level"].fillna("").str.lower() == "family"
+    ]
+    result = paginate(result, limit, offset)
+    return result.to_dict(orient="records")
+
+
+@router.get("/families/{family_id}")
+def get_family(family_id: str):
+    result = languages_df[
+        (languages_df["ID"] == family_id)
+        & (languages_df["Level"].fillna("").str.lower() == "family")
+    ]
+
+    if result.empty:
+        raise HTTPException(status_code=404, detail="Family not found")
+
+    return result.iloc[0].to_dict()
+
+
+@router.get("/families/{family_id}/languages")
+def get_family_languages(
+    family_id: str,
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+):
+    family_check = languages_df[
+        (languages_df["ID"] == family_id)
+        & (languages_df["Level"].fillna("").str.lower() == "family")
+    ]
+
+    if family_check.empty:
+        raise HTTPException(status_code=404, detail="Family not found")
+
+    result = languages_df[languages_df["Family_ID"] == family_id]
+    result = paginate(result, limit, offset)
+    return result.to_dict(orient="records")
+
