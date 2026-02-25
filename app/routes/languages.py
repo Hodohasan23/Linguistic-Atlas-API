@@ -1,31 +1,25 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query, Depends
 import pandas as pd
+from pathlib import Path
+import numpy as np
+from app.security import verify_api_key
 
-router = APIRouter(tags=["Languages"])
+router = APIRouter(
+    tags=["Languages"],
+    dependencies=[Depends(verify_api_key)]
+)
 
-languages_df = pd.read_csv("data/raw/languages.csv")
-names_df = pd.read_csv("data/raw/names.csv")
+BASE_DIR = Path(__file__).resolve().parents[2]
+
+languages_df = pd.read_csv(BASE_DIR / "data/raw/languages.csv")
+names_df = pd.read_csv(BASE_DIR / "data/raw/names.csv")
 
 # Replace NaN with None so JSON can handle it
 languages_df = languages_df.replace({np.nan: None})
 names_df = names_df.replace({np.nan: None})
 
-@router.get("/languages")
-def get_languages(limit: int = 20, offset: int = 0):
-    result = languages_df.iloc[offset: offset + limit]
-    return result.to_dict(orient="records")
 
-
-@router.get("/languages/{language_id}")
-def get_language(language_id: str):
-    result = languages_df[languages_df["ID"] == language_id]
-
-    if result.empty:
-        raise HTTPException(status_code=404, detail="Language not found")
-
-    return result.iloc[0].to_dict()
-
-    def paginate(df: pd.DataFrame, limit: int, offset: int) -> pd.DataFrame:
+def paginate(df: pd.DataFrame, limit: int, offset: int) -> pd.DataFrame:
     return df.iloc[offset: offset + limit]
 
 
@@ -82,6 +76,25 @@ def search_languages(
     result = paginate(result, limit, offset)
     return result.to_dict(orient="records")
 
+
+@router.get("/languages/iso/{iso_code}")
+def get_language_by_iso(iso_code: str):
+    result = languages_df[
+        languages_df["ISO639P3code"].fillna("").str.lower() == iso_code.lower()
+    ]
+
+    if result.empty:
+        raise HTTPException(status_code=404, detail="Language not found")
+
+    return result.iloc[0].to_dict()
+
+
+@router.get("/languages/random")
+def get_random_language():
+    random_language = languages_df.sample(1).iloc[0]
+    return random_language.to_dict()
+
+
 @router.get("/languages/{language_id}")
 def get_language(language_id: str):
     row = get_language_row(language_id)
@@ -94,6 +107,7 @@ def get_language_names(language_id: str):
 
     result = names_df[names_df["Language_ID"] == language_id]
     return result.to_dict(orient="records")
+
 
 @router.get("/languages/{language_id}/classification")
 def get_language_classification(language_id: str):
@@ -180,4 +194,39 @@ def get_family_languages(
     result = languages_df[languages_df["Family_ID"] == family_id]
     result = paginate(result, limit, offset)
     return result.to_dict(orient="records")
+
+
+@router.get("/macroareas")
+def get_macroareas():
+    macroareas = set()
+
+    for value in languages_df["Macroarea"].dropna():
+        parts = [part.strip() for part in str(value).split(",")]
+        for part in parts:
+            if part:
+                macroareas.add(part)
+
+    return [{"macroarea": macroarea} for macroarea in sorted(macroareas)]
+
+
+@router.get("/macroareas/{macroarea}/languages")
+def get_macroarea_languages(
+    macroarea: str,
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+):
+    result = languages_df[
+        languages_df["Macroarea"].fillna("").str.contains(
+            rf"(^|,\s*){macroarea}(\s*,|$)",
+            case=False,
+            regex=True
+        )
+    ]
+
+    if result.empty:
+        raise HTTPException(status_code=404, detail="Macroarea not found")
+
+    result = paginate(result, limit, offset)
+    return result.to_dict(orient="records")
+
 
