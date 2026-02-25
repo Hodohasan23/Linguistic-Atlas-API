@@ -4,10 +4,7 @@ from pathlib import Path
 import numpy as np
 from app.security import verify_api_key
 
-router = APIRouter(
-    tags=["Languages"],
-    dependencies=[Depends(verify_api_key)]
-)
+router = APIRouter(tags=["Languages"], dependencies=[Depends(verify_api_key)])
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 
@@ -20,7 +17,7 @@ names_df = names_df.replace({np.nan: None})
 
 
 def paginate(df: pd.DataFrame, limit: int, offset: int) -> pd.DataFrame:
-    return df.iloc[offset: offset + limit]
+    return df.iloc[offset : offset + limit]
 
 
 def get_language_row(language_id: str) -> pd.Series:
@@ -42,11 +39,9 @@ def get_languages(
 
     if macroarea:
         result = result[
-            result["Macroarea"].fillna("").str.contains(
-                rf"(^|,\s*){macroarea}(\s*,|$)",
-                case=False,
-                regex=True
-            )
+            result["Macroarea"]
+            .fillna("")
+            .str.contains(rf"(^|,\s*){macroarea}(\s*,|$)", case=False, regex=True)
         ]
 
     if level:
@@ -157,9 +152,7 @@ def get_families(
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
 ):
-    result = languages_df[
-        languages_df["Level"].fillna("").str.lower() == "family"
-    ]
+    result = languages_df[languages_df["Level"].fillna("").str.lower() == "family"]
     result = paginate(result, limit, offset)
     return result.to_dict(orient="records")
 
@@ -216,11 +209,9 @@ def get_macroarea_languages(
     offset: int = Query(0, ge=0),
 ):
     result = languages_df[
-        languages_df["Macroarea"].fillna("").str.contains(
-            rf"(^|,\s*){macroarea}(\s*,|$)",
-            case=False,
-            regex=True
-        )
+        languages_df["Macroarea"]
+        .fillna("")
+        .str.contains(rf"(^|,\s*){macroarea}(\s*,|$)", case=False, regex=True)
     ]
 
     if result.empty:
@@ -243,12 +234,13 @@ def languages_per_macroarea():
 
     return counts.to_dict()
 
+
 @router.get("/stats/languages-per-family")
 def languages_per_family():
 
-    families = languages_df[
-        languages_df["Level"].fillna("").str.lower() == "family"
-    ][["ID", "Name"]]
+    families = languages_df[languages_df["Level"].fillna("").str.lower() == "family"][
+        ["ID", "Name"]
+    ]
 
     counts = (
         languages_df["Family_ID"]
@@ -257,12 +249,7 @@ def languages_per_family():
         .reset_index(name="language_count")
     )
 
-    merged = counts.merge(
-        families,
-        left_on="Family_ID",
-        right_on="ID",
-        how="left"
-    )
+    merged = counts.merge(families, left_on="Family_ID", right_on="ID", how="left")
 
     result = {
         row["Name"]: int(row["language_count"])
@@ -271,5 +258,3 @@ def languages_per_family():
     }
 
     return result
-
-
