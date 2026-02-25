@@ -230,3 +230,46 @@ def get_macroarea_languages(
     return result.to_dict(orient="records")
 
 
+@router.get("/stats/languages-per-macroarea")
+def languages_per_macroarea():
+    counts = (
+        languages_df["Macroarea"]
+        .dropna()
+        .str.split(",")
+        .explode()
+        .str.strip()
+        .value_counts()
+    )
+
+    return counts.to_dict()
+
+@router.get("/stats/languages-per-family")
+def languages_per_family():
+
+    families = languages_df[
+        languages_df["Level"].fillna("").str.lower() == "family"
+    ][["ID", "Name"]]
+
+    counts = (
+        languages_df["Family_ID"]
+        .value_counts()
+        .rename_axis("Family_ID")
+        .reset_index(name="language_count")
+    )
+
+    merged = counts.merge(
+        families,
+        left_on="Family_ID",
+        right_on="ID",
+        how="left"
+    )
+
+    result = {
+        row["Name"]: int(row["language_count"])
+        for _, row in merged.iterrows()
+        if pd.notna(row["Name"])
+    }
+
+    return result
+
+
