@@ -1,16 +1,24 @@
-// API Configuration — Replace BASE_URL with your FastAPI endpoint
-export const API_BASE_URL = "";
+export const API_BASE_URL = "http://127.0.0.1:8000";
+const API_KEY = "secret123";
 
-// Generic fetch helper — swap mock data for real API calls here
 export async function apiFetch<T>(
   endpoint: string,
   options?: RequestInit
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
+
   const res = await fetch(url, {
-    headers: { "Content-Type": "application/json", ...options?.headers },
+    headers: {
+      "Content-Type": "application/json",
+      "X-API-Key": API_KEY,
+      ...(options?.headers || {}),
+    },
     ...options,
   });
-  if (!res.ok) throw new Error(`API error: ${res.status}`);
+
+  if (!res.ok) {
+    throw new Error(`API error: ${res.status}`);
+  }
+
   return res.json();
 }
