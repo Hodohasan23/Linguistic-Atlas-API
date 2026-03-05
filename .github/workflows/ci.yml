@@ -1,7 +1,3 @@
-# Continuous Integration workflow for the Linguistic Atlas API
-# Runs linting and automated tests on pushes and pull requests to main
-# Recommended: require this workflow to pass before merging via branch protection
-
 name: CI
 
 on:
@@ -41,6 +37,22 @@ jobs:
     runs-on: ubuntu-latest
     needs: lint
 
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: hodohasan
+          POSTGRES_PASSWORD: ""
+          POSTGRES_DB: linguistic_atlas
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -59,4 +71,4 @@ jobs:
 
       - name: Run tests
         run: |
-          PYTHONPATH=. PYTHONPATH=./app pytest
+          PYTHONPATH=. pytest tests/ -v
