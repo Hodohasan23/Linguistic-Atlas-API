@@ -1,61 +1,56 @@
 from fastapi import APIRouter, HTTPException, Query, Depends
-import pandas as pd
-from pathlib import Path
-import numpy as np
+from sqlmodel import Session, select, func
+from app.database import get_session
+from app.models.models import Language, LanguageName, ParameterValue, Parameter, Code
 from app.security import verify_api_key
 
 router = APIRouter(tags=["Languages"], dependencies=[Depends(verify_api_key)])
 
-BASE_DIR = Path(__file__).resolve().parents[2]
-
-languages_df = pd.read_csv(BASE_DIR / "data/raw/languages.csv")
-names_df = pd.read_csv(BASE_DIR / "data/raw/names.csv")
-
-# Replace NaN with None so JSON can handle it
-languages_df = languages_df.replace({np.nan: None})
-names_df = names_df.replace({np.nan: None})
-
-
-def paginate(df: pd.DataFrame, limit: int, offset: int) -> pd.DataFrame:
-    return df.iloc[offset : offset + limit]
-
-
-def get_language_row(language_id: str) -> pd.Series:
-    result = languages_df[languages_df["ID"] == language_id]
-    if result.empty:
-        raise HTTPException(status_code=404, detail="Language not found")
-    return result.iloc[0]
-
 
 @router.get("/languages")
 def get_languages(
-    limit: int = Query(20, ge=1, le=100),
+    limit: int = Query(20, ge=1, le=500),
     offset: int = Query(0, ge=0),
     macroarea: str | None = None,
     level: str | None = None,
     country: str | None = None,
+    session: Session = Depends(get_session),
 ):
-    result = languages_df.copy()
-
+    statement = select(Language)
     if macroarea:
-        result = result[
-            result["Macroarea"]
-            .fillna("")
-            .str.contains(rf"(^|,\s*){macroarea}(\s*,|$)", case=False, regex=True)
-        ]
-
+        statement = statement.where(Language.macroarea.ilike(f"%{macroarea}%"))
     if level:
-        result = result[
-            result["Level"].fillna("").str.contains(level, case=False, na=False)
-        ]
-
+        statement = statement.where(Language.level.ilike(f"%{level}%"))
     if country:
-        result = result[
-            result["Countries"].fillna("").str.contains(country, case=False, na=False)
-        ]
+        statement = statement.where(Language.countries.ilike(f"%{country}%"))
+    statement = statement.offset(offset).limit(limit)
+    return session.exec(statement).all()
 
-    result = paginate(result, limit, offset)
-    return result.to_dict(orient="records")
+
+@router.get("/languages/map")
+def get_languages_map(
+    limit: int = Query(500, ge=1, le=2000),
+    session: Session = Depends(get_session),
+):
+    statement = (
+        select(Language)
+        .where(Language.latitude.is_not(None))
+        .where(Language.longitude.is_not(None))
+        .limit(limit)
+    )
+    results = session.exec(statement).all()
+    return [
+        {
+            "ID": r.id,
+            "Name": r.name,
+            "Macroarea": r.macroarea,
+            "Latitude": r.latitude,
+            "Longitude": r.longitude,
+            "Level": r.level,
+            "ISO639P3code": r.iso_code,
+        }
+        for r in results
+    ]
 
 
 @router.get("/languages/search")
@@ -63,111 +58,138 @@ def search_languages(
     name: str,
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
+    session: Session = Depends(get_session),
 ):
-    result = languages_df[
-        languages_df["Name"].fillna("").str.contains(name, case=False, na=False)
-    ]
-
-    result = paginate(result, limit, offset)
-    return result.to_dict(orient="records")
-
-
-@router.get("/languages/iso/{iso_code}")
-def get_language_by_iso(iso_code: str):
-    result = languages_df[
-        languages_df["ISO639P3code"].fillna("").str.lower() == iso_code.lower()
-    ]
-
-    if result.empty:
-        raise HTTPException(status_code=404, detail="Language not found")
-
-    return result.iloc[0].to_dict()
+    statement = (
+        select(Language)
+        .where(Language.name.ilike(f"%{name}%"))
+        .offset(offset)
+        .limit(limit)
+    )
+    return session.exec(statement).all()
 
 
 @router.get("/languages/random")
-def get_random_language():
-    random_language = languages_df.sample(1).iloc[0]
-    return random_language.to_dict()
+def get_random_language(session: Session = Depends(get_session)):
+    statement = select(Language).order_by(func.random()).limit(1)
+    result = session.exec(statement).first()
+    if not result:
+        raise HTTPException(status_code=404, detail="No languages found")
+    return result
+
+
+@router.get("/languages/iso/{iso_code}")
+def get_language_by_iso(iso_code: str, session: Session = Depends(get_session)):
+    statement = select(Language).where(
+        func.lower(Language.iso_code) == iso_code.lower()
+    )
+    result = session.exec(statement).first()
+    if not result:
+        raise HTTPException(status_code=404, detail="Language not found")
+    return result
 
 
 @router.get("/languages/{language_id}")
-def get_language(language_id: str):
-    row = get_language_row(language_id)
-    return row.to_dict()
+def get_language(language_id: str, session: Session = Depends(get_session)):
+    language = session.get(Language, language_id)
+    if not language:
+        raise HTTPException(status_code=404, detail="Language not found")
+    return language
 
 
 @router.get("/languages/{language_id}/names")
-def get_language_names(language_id: str):
-    _ = get_language_row(language_id)
-
-    result = names_df[names_df["Language_ID"] == language_id]
-    return result.to_dict(orient="records")
+def get_language_names(language_id: str, session: Session = Depends(get_session)):
+    session.get(Language, language_id) or (_ for _ in ()).throw(
+        HTTPException(status_code=404, detail="Language not found")
+    )
+    statement = select(LanguageName).where(LanguageName.language_id == language_id)
+    return session.exec(statement).all()
 
 
 @router.get("/languages/{language_id}/classification")
-def get_language_classification(language_id: str):
-    current = get_language_row(language_id)
+def get_language_classification(
+    language_id: str, session: Session = Depends(get_session)
+):
+    current = session.get(Language, language_id)
+    if not current:
+        raise HTTPException(status_code=404, detail="Language not found")
 
-    classification = [
-        {
-            "id": current["ID"],
-            "name": current["Name"],
-            "level": current["Level"],
-        }
-    ]
+    classification = [{"id": current.id, "name": current.name, "level": current.level}]
 
     visited = set()
-    parent_id = current["Family_ID"]
+    parent_id = current.family_id
 
-    while parent_id is not None:
+    while parent_id:
         if parent_id in visited:
             break
         visited.add(parent_id)
-
-        parent_rows = languages_df[languages_df["ID"] == parent_id]
-        if parent_rows.empty:
+        parent = session.get(Language, parent_id)
+        if not parent:
             break
-
-        parent = parent_rows.iloc[0]
         classification.append(
-            {
-                "id": parent["ID"],
-                "name": parent["Name"],
-                "level": parent["Level"],
-            }
+            {"id": parent.id, "name": parent.name, "level": parent.level}
         )
-        parent_id = parent["Family_ID"]
+        parent_id = parent.family_id
 
     classification.reverse()
-
     return {
-        "language_id": current["ID"],
-        "language_name": current["Name"],
+        "language_id": current.id,
+        "language_name": current.name,
         "classification": classification,
     }
+
+
+@router.get("/languages/{language_id}/parameters")
+def get_language_parameters(language_id: str, session: Session = Depends(get_session)):
+    if not session.get(Language, language_id):
+        raise HTTPException(status_code=404, detail="Language not found")
+
+    values = session.exec(
+        select(ParameterValue).where(ParameterValue.language_id == language_id)
+    ).all()
+
+    result = []
+    for item in values:
+        parameter = (
+            session.get(Parameter, item.parameter_id) if item.parameter_id else None
+        )
+        code = session.get(Code, item.code_id) if item.code_id else None
+        result.append(
+            {
+                "parameter_id": item.parameter_id,
+                "parameter_name": parameter.name if parameter else None,
+                "value": item.value,
+                "code_id": item.code_id,
+                "code_name": code.name if code else None,
+                "code_description": code.description if code else None,
+                "comment": item.comment,
+                "source": item.source,
+            }
+        )
+    return result
 
 
 @router.get("/families")
 def get_families(
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
+    session: Session = Depends(get_session),
 ):
-    result = languages_df[languages_df["Level"].fillna("").str.lower() == "family"]
-    result = paginate(result, limit, offset)
-    return result.to_dict(orient="records")
+    statement = (
+        select(Language)
+        .where(func.lower(Language.level) == "family")
+        .offset(offset)
+        .limit(limit)
+    )
+    return session.exec(statement).all()
 
 
 @router.get("/families/{family_id}")
-def get_family(family_id: str):
-    result = languages_df[
-        (languages_df["ID"] == family_id)
-        & (languages_df["Level"].fillna("").str.lower() == "family")
-    ]
-
-    if result.empty:
+def get_family(family_id: str, session: Session = Depends(get_session)):
+    language = session.get(Language, family_id)
+    if not language or (language.level or "").lower() != "family":
         raise HTTPException(status_code=404, detail="Family not found")
-
-    return result.iloc[0].to_dict()
+    return language
 
 
 @router.get("/families/{family_id}/languages")
@@ -175,31 +197,34 @@ def get_family_languages(
     family_id: str,
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
+    session: Session = Depends(get_session),
 ):
-    family_check = languages_df[
-        (languages_df["ID"] == family_id)
-        & (languages_df["Level"].fillna("").str.lower() == "family")
-    ]
-
-    if family_check.empty:
+    family = session.get(Language, family_id)
+    if not family or (family.level or "").lower() != "family":
         raise HTTPException(status_code=404, detail="Family not found")
 
-    result = languages_df[languages_df["Family_ID"] == family_id]
-    result = paginate(result, limit, offset)
-    return result.to_dict(orient="records")
+    statement = (
+        select(Language)
+        .where(Language.family_id == family_id)
+        .offset(offset)
+        .limit(limit)
+    )
+    return session.exec(statement).all()
 
 
 @router.get("/macroareas")
-def get_macroareas():
+def get_macroareas(session: Session = Depends(get_session)):
+    statement = (
+        select(Language.macroarea).where(Language.macroarea.is_not(None)).distinct()
+    )
+    results = session.exec(statement).all()
     macroareas = set()
-
-    for value in languages_df["Macroarea"].dropna():
-        parts = [part.strip() for part in str(value).split(",")]
-        for part in parts:
+    for value in results:
+        for part in str(value).split(","):
+            part = part.strip()
             if part:
                 macroareas.add(part)
-
-    return [{"macroarea": macroarea} for macroarea in sorted(macroareas)]
+    return [{"macroarea": m} for m in sorted(macroareas)]
 
 
 @router.get("/macroareas/{macroarea}/languages")
@@ -207,54 +232,47 @@ def get_macroarea_languages(
     macroarea: str,
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
+    session: Session = Depends(get_session),
 ):
-    result = languages_df[
-        languages_df["Macroarea"]
-        .fillna("")
-        .str.contains(rf"(^|,\s*){macroarea}(\s*,|$)", case=False, regex=True)
-    ]
-
-    if result.empty:
+    statement = (
+        select(Language)
+        .where(Language.macroarea.ilike(f"%{macroarea}%"))
+        .offset(offset)
+        .limit(limit)
+    )
+    results = session.exec(statement).all()
+    if not results:
         raise HTTPException(status_code=404, detail="Macroarea not found")
-
-    result = paginate(result, limit, offset)
-    return result.to_dict(orient="records")
+    return results
 
 
 @router.get("/stats/languages-per-macroarea")
-def languages_per_macroarea():
-    counts = (
-        languages_df["Macroarea"]
-        .dropna()
-        .str.split(",")
-        .explode()
-        .str.strip()
-        .value_counts()
+def languages_per_macroarea(session: Session = Depends(get_session)):
+    statement = (
+        select(Language.macroarea, func.count(Language.id).label("count"))
+        .where(Language.macroarea.is_not(None))
+        .group_by(Language.macroarea)
+        .order_by(func.count(Language.id).desc())
     )
-
-    return counts.to_dict()
+    results = session.exec(statement).all()
+    return {row[0]: row[1] for row in results}
 
 
 @router.get("/stats/languages-per-family")
-def languages_per_family():
-
-    families = languages_df[languages_df["Level"].fillna("").str.lower() == "family"][
-        ["ID", "Name"]
-    ]
-
-    counts = (
-        languages_df["Family_ID"]
-        .value_counts()
-        .rename_axis("Family_ID")
-        .reset_index(name="language_count")
+def languages_per_family(session: Session = Depends(get_session)):
+    statement = (
+        select(Language.family_id, func.count(Language.id).label("count"))
+        .where(Language.family_id.is_not(None))
+        .group_by(Language.family_id)
+        .order_by(func.count(Language.id).desc())
+        .limit(50)
     )
+    rows = session.exec(statement).all()
 
-    merged = counts.merge(families, left_on="Family_ID", right_on="ID", how="left")
-
-    result = {
-        row["Name"]: int(row["language_count"])
-        for _, row in merged.iterrows()
-        if pd.notna(row["Name"])
-    }
+    result = {}
+    for family_id, count in rows:
+        family = session.get(Language, family_id)
+        name = family.name if family else family_id
+        result[name] = count
 
     return result
