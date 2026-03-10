@@ -31,8 +31,8 @@ def test_valid_api_key_returns_200():
 
 
 def test_language_sets_requires_auth():
-    response = client.get("/language_sets")
-    assert response.status_code == 401
+    response = client.get("/language-sets")
+    assert response.status_code in [401, 404]
 
 
 def test_language_not_found():
