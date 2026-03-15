@@ -32,7 +32,7 @@ def clean_float(v):
         return None
     try:
         return float(v)
-    except:
+    except Exception:
         return None
 
 
@@ -41,7 +41,7 @@ def clean_int(v):
         return None
     try:
         return int(v)
-    except:
+    except Exception:
         return None
 
 
