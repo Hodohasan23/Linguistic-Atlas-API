@@ -30,8 +30,8 @@ async def search_languages(name: str, limit: int = 20) -> str:
     data = await _get("/languages/search", {"name": name, "limit": limit})
     if isinstance(data, list):
         return "\n".join(
-            f"{l['id']} — {l['name']} ({l.get('iso_code') or '—'}) [{l.get('macroarea') or '—'}]"
-            for l in data
+            f"{lang['id']} — {lang['name']} ({lang.get('iso_code') or '—'}) [{lang.get('macroarea') or '—'}]"
+            for lang in data
         )
     return str(data)
 
@@ -74,7 +74,8 @@ async def get_languages_by_macroarea(macroarea: str, limit: int = 20) -> str:
     data = await _get(f"/macroareas/{macroarea}/languages", {"limit": limit})
     if isinstance(data, list):
         return "\n".join(
-            f"{l['id']} — {l['name']} ({l.get('iso_code') or '—'})" for l in data
+            f"{lang['id']} — {lang['name']} ({lang.get('iso_code') or '—'})"
+            for lang in data
         )
     return str(data)
 
@@ -85,7 +86,8 @@ async def get_family_languages(family_id: str, limit: int = 20) -> str:
     data = await _get(f"/families/{family_id}/languages", {"limit": limit})
     if isinstance(data, list):
         return "\n".join(
-            f"{l['id']} — {l['name']} ({l.get('iso_code') or '—'})" for l in data
+            f"{lang['id']} — {lang['name']} ({lang.get('iso_code') or '—'})"
+            for lang in data
         )
     return str(data)
 
