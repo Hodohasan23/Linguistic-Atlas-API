@@ -10,8 +10,5 @@ def test_root():
 
 
 def test_languages_endpoint():
-    response = client.get(
-        "/languages",
-        headers={"X-API-Key": "secret123"}
-    )
+    response = client.get("/languages", headers={"X-API-Key": "secret123"})
     assert response.status_code == 200
