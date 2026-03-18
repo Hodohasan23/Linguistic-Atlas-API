@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlmodel import Session, select
 
 from app.database import get_session
@@ -13,14 +14,23 @@ from app.security import (
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
 
+class AuthRequest(BaseModel):
+    email: str
+    password: str
+
+
 @router.post("/register")
-def register(email: str, password: str, session: Session = Depends(get_session)):
-    existing = session.exec(select(User).where(User.email == email)).first()
+def register(payload: AuthRequest, session: Session = Depends(get_session)):
+    existing = session.exec(select(User).where(User.email == payload.email)).first()
+
     if existing:
         raise HTTPException(status_code=400, detail="User exists")
 
     user = User(
-        email=email, username=email, password_hash=hash_password(password), role="USER"
+        email=payload.email,
+        username=payload.email,
+        password_hash=hash_password(payload.password),
+        role="USER",
     )
 
     session.add(user)
@@ -31,13 +41,13 @@ def register(email: str, password: str, session: Session = Depends(get_session))
 
 
 @router.post("/login")
-def login(email: str, password: str, session: Session = Depends(get_session)):
-    user = session.exec(select(User).where(User.email == email)).first()
+def login(payload: AuthRequest, session: Session = Depends(get_session)):
+    user = session.exec(select(User).where(User.email == payload.email)).first()
 
-    if not user or not verify_password(password, user.password_hash):
+    if not user or not verify_password(payload.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    token = create_access_token({"sub": user.email, "role": user.role})
+    token = create_access_token({"sub": user.email, "role": user.role, "id": user.id})
 
     return {"access_token": token}
 
@@ -45,6 +55,7 @@ def login(email: str, password: str, session: Session = Depends(get_session)):
 @router.get("/me")
 def me(token: str):
     payload = decode_token(token)
+
     if not payload:
         raise HTTPException(status_code=401, detail="Invalid token")
 

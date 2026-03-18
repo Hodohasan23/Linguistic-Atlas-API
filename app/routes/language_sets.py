@@ -26,7 +26,6 @@ def now_utc():
 
 
 class LanguageSetCreate(BaseModel):
-    user_id: int
     title: str
     description: Optional[str] = None
     notes: Optional[str] = None
@@ -51,10 +50,10 @@ class LanguageSetItemCreate(BaseModel):
 def create_language_set(
     payload: LanguageSetCreate,
     session: Session = Depends(get_session),
-    token: dict = Depends(require_user),  # 🔐 USER REQUIRED
+    token: dict = Depends(require_user),
 ):
     obj = LanguageSet(
-        user_id=payload.user_id,  # (optional: replace with token["sub"])
+        user_id=token["id"],
         title=payload.title,
         description=payload.description,
         notes=payload.notes,
