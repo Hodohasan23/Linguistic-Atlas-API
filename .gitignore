@@ -20,4 +20,4 @@ env/
 *.log
 
 # database (optional)
-*.db
+*.db.claude/
