@@ -1,7 +1,8 @@
 from sqlmodel import Session, create_engine
 from typing import Generator
+import os
 
-DATABASE_URL = "postgresql+psycopg://hodohasan:@localhost:5432/linguistic_atlas"
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
 engine = create_engine(DATABASE_URL, echo=False)
 
