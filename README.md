@@ -117,29 +117,40 @@ pytest -v
 ---
 
 ## Project structure
-
 ```
 app/
-  main.py               # FastAPI app entrypoint
-  database.py           # engine, session, get_session dependency
-  models.py             # SQLModel ORM models (11 tables)
+  main.py                       # FastAPI app entrypoint
+  database.py                   # engine, session, get_session dependency
+  config.py                     # settings and environment variable loading
+  security.py                   # API key and JWT dependencies
+  models/
+    models.py                   # SQLModel ORM models (11 tables)
   routes/
-    languages.py        # language endpoints
-    language_sets.py    # language set CRUD
-    analytics.py        # similarity scoring, set comparison
-    auth.py             # register, login, /auth/me
-    core.py             # health, root
+    languages.py                # language endpoints
+    language_sets.py            # language set CRUD
+    analytics.py                # similarity scoring, set comparison
+    auth.py                     # register, login, /auth/me
+  services/
+    language_service.py         # language query logic
+    stats_service.py            # analytics and statistics logic
 
+data/                           # raw Glottolog CSV source files
+docs/                           # API documentation PDF
+frontend/                       # standalone frontend interface
+migrations/                     # Alembic migration versions
+scripts/                        # utility scripts (seeding, setup)
 tests/
-  test_basic.py         # core contract tests
-  test_extended.py      # auth, filtering, analytics, error handling
+  test_basic.py                 # core contract tests
+  test_extended.py              # auth, filtering, analytics, error handling
 
-mcp_server.py           # MCP server for LLM-based querying
-seed.py                 # dataset seeding script
-migrations/             # Alembic migration versions
-frontend/               # standalone frontend interface
+mcp_server.py                   # MCP server for LLM-based querying
+schema.erd                      # entity-relationship diagram
+schema.sql                      # raw SQL schema
+alembic.ini                     # Alembic configuration
+Procfile                        # Railway process definition
+requirements.txt                # Python dependencies
+pytest.ini                      # pytest configuration
 ```
-
 ---
 
 ## Configuration
@@ -183,7 +194,7 @@ The dataset is derived from Glottolog and distributed across seven CSV files:
 To seed locally:
 
 ```bash
-python seed.py
+python seed_postgres.py
 ```
 
 To seed the Railway database remotely:
@@ -219,10 +230,11 @@ To run the frontend locally, open `frontend/index.html` in a browser or serve it
 
 ```bash
 cd frontend
-python -m http.server 3000
+npm install dev 
+npm run dev 
 ```
 
-Then open http://localhost:3000 in your browser.
+Then open http://localhost:8080/ in your browser.
 
 ---
 
