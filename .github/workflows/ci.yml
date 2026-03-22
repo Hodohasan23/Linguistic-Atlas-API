@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, fix/tests]
   pull_request:
-    branches: [main]
+    branches: [main, fix/tests]
 
 jobs:
   lint:
@@ -70,5 +70,9 @@ jobs:
           pip install pytest
 
       - name: Run tests
+        env:
+          DATABASE_URL: postgresql://hodohasan@localhost/linguistic_atlas
+          API_KEY: secret123
+          SECRET_KEY: testsecretkey
         run: |
           PYTHONPATH=. pytest tests/ -v
