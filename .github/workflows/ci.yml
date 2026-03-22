@@ -75,4 +75,5 @@ jobs:
           API_KEY: secret123
           SECRET_KEY: testsecretkey
         run: |
+          python -c "from app.database import get_engine; from sqlmodel import SQLModel; import app.models.models; SQLModel.metadata.create_all(get_engine())"
           PYTHONPATH=. pytest tests/ -v
