@@ -342,6 +342,10 @@ The application is deployed on Railway with two services: a Uvicorn web service 
 
 ---
 
-## GenAI usage
+## Security
 
-Claude was used throughout development for architecture planning, debugging, and understanding new technologies including the MCP protocol. Specific uses included diagnosing the Railway deployment crash caused by SQLAlchemy engine initialisation at import time, resolving the GitHub Actions CI race condition, and writing assistance for the technical report. All generated suggestions were reviewed, tested, and adapted before inclusion. Full declaration and conversation logs are included in the technical report appendix.
+All endpoints are protected using **API key authentication** via request headers.
+
+Example:
+```http
+X-API-Key: secret123
