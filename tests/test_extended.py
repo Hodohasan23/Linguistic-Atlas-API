@@ -16,7 +16,6 @@ def test_register_new_user():
     response = client.post(
         "/auth/register",
         json={
-            "username": "testuser_reg",
             "email": "testuser_reg@test.com",
             "password": "testpassword123",
         },
@@ -29,7 +28,6 @@ def test_login_returns_token():
     client.post(
         "/auth/register",
         json={
-            "username": "testuser_login",
             "email": "testuser_login@test.com",
             "password": "testpassword123",
         },
@@ -37,7 +35,7 @@ def test_login_returns_token():
     )
     response = client.post(
         "/auth/login",
-        json={"username": "testuser_login", "password": "testpassword123"},
+        json={"email": "testuser_login@test.com", "password": "testpassword123"},
         headers=API_KEY,
     )
     assert response.status_code == 200
@@ -47,15 +45,15 @@ def test_login_returns_token():
 def test_login_wrong_password_returns_401():
     response = client.post(
         "/auth/login",
-        json={"username": "testuser_login", "password": "wrongpassword"},
+        json={"email": "testuser_login@test.com", "password": "wrongpassword"},
         headers=API_KEY,
     )
-    assert response.status_code in [401, 422]
+    assert response.status_code == 401
 
 
-def test_auth_me_without_token_returns_401():
+def test_auth_me_without_token_returns_422():
     response = client.get("/auth/me", headers=API_KEY)
-    assert response.status_code in [401, 403, 422]
+    assert response.status_code == 422
 
 
 # Languages endpoints
@@ -97,7 +95,6 @@ def get_token():
     client.post(
         "/auth/register",
         json={
-            "username": "setuser",
             "email": "setuser@test.com",
             "password": "testpassword123",
         },
@@ -105,7 +102,7 @@ def get_token():
     )
     response = client.post(
         "/auth/login",
-        json={"username": "setuser", "password": "testpassword123"},
+        json={"email": "setuser@test.com", "password": "testpassword123"},
         headers=API_KEY,
     )
     return response.json().get("access_token", "")
@@ -164,5 +161,5 @@ def test_wrong_method_returns_405():
 
 
 def test_malformed_json_on_register_returns_422():
-    response = client.post("/auth/register", json={"username": "x"}, headers=API_KEY)
+    response = client.post("/auth/register", json={"email": "x"}, headers=API_KEY)
     assert response.status_code == 422
