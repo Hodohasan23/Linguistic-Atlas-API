@@ -21,3 +21,4 @@ env/
 
 # database (optional)
 *.db.claude/
+.claude/

@@ -1,7 +1,7 @@
 import pandas as pd
 from sqlmodel import Session
-from app.database import engine, create_db_and_tables
-from app.models import (
+from app.database import engine
+from app.models.models import (
     Language,
     LanguageName,
     Parameter,
@@ -196,7 +196,7 @@ def seed_trees(session):
 
 
 def main():
-    create_db_and_tables()
+    from sqlmodel import SQLModel; SQLModel.metadata.create_all(engine)
     with Session(engine) as session:
         seed_languages(session)
         seed_names(session)
