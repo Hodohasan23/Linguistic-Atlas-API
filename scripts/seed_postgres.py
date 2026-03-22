@@ -196,7 +196,9 @@ def seed_trees(session):
 
 
 def main():
-    from sqlmodel import SQLModel; SQLModel.metadata.create_all(engine)
+    from sqlmodel import SQLModel
+
+    SQLModel.metadata.create_all(engine)
     with Session(engine) as session:
         seed_languages(session)
         seed_names(session)
