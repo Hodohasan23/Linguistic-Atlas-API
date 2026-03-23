@@ -74,6 +74,7 @@ jobs:
           DATABASE_URL: postgresql://hodohasan@localhost/linguistic_atlas
           API_KEY: secret123
           SECRET_KEY: testsecretkey
+          PYTHONPATH: .
         run: |
-          python -c "from app.database import get_engine; from sqlmodel import SQLModel; import app.models.models; SQLModel.metadata.create_all(get_engine())"
-          PYTHONPATH=. pytest tests/ -v
+          python -c "from app.db.session import get_engine; from sqlmodel import SQLModel; import app.models.models; SQLModel.metadata.create_all(get_engine())"
+          pytest tests/ -v
