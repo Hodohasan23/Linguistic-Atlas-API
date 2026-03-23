@@ -97,9 +97,7 @@ Rules:
 """
 
     try:
-        messages = [
-            {"role": "user", "content": request.question}
-        ]
+        messages = [{"role": "user", "content": request.question}]
 
         response = client.messages.create(
             model="claude-sonnet-4-6",
@@ -116,21 +114,27 @@ Rules:
                 if block.type == "tool_use":
                     result = run_tool(block.name, block.input, session)
 
-                    tool_results.append({
-                        "type": "tool_result",
-                        "tool_use_id": block.id,
-                        "content": str(result),
-                    })
+                    tool_results.append(
+                        {
+                            "type": "tool_result",
+                            "tool_use_id": block.id,
+                            "content": str(result),
+                        }
+                    )
 
-            messages.append({
-                "role": "assistant",
-                "content": response.content,
-            })
+            messages.append(
+                {
+                    "role": "assistant",
+                    "content": response.content,
+                }
+            )
 
-            messages.append({
-                "role": "user",
-                "content": tool_results,
-            })
+            messages.append(
+                {
+                    "role": "user",
+                    "content": tool_results,
+                }
+            )
 
             response = client.messages.create(
                 model="claude-sonnet-4-6",

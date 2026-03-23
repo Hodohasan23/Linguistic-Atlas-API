@@ -51,11 +51,13 @@ def decode_token(token: str):
     except JWTError:
         return None
 
+
 def require_user(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)):
     payload = decode_token(credentials.credentials)
     if not payload:
         raise HTTPException(status_code=401, detail="Unauthorized")
     return payload
+
 
 def require_admin(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)):
     payload = decode_token(credentials.credentials)

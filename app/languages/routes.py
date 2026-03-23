@@ -30,12 +30,42 @@ _LANGUAGE_EXAMPLE = {
 }
 
 AES_LEVELS = {
-    "aes-not_endangered": {"label": "Not Endangered", "severity": 1, "at_risk": False, "description": "EGIDS: <=6a; UNESCO: safe; ElCat: safe"},
-    "aes-threatened":     {"label": "Threatened",     "severity": 2, "at_risk": True,  "description": "EGIDS: 6b; UNESCO: vulnerable; ElCat: vulnerable"},
-    "aes-shifting":       {"label": "Shifting",        "severity": 3, "at_risk": True,  "description": "EGIDS: 7; UNESCO: definitely endangered; ElCat: definitely endangered"},
-    "aes-moribund":       {"label": "Moribund",        "severity": 4, "at_risk": True,  "description": "EGIDS: 8a; UNESCO: severely endangered; ElCat: severely endangered"},
-    "aes-nearly_extinct": {"label": "Nearly Extinct",  "severity": 5, "at_risk": True,  "description": "EGIDS: 8b; UNESCO: critically endangered; ElCat: critically endangered"},
-    "aes-extinct":        {"label": "Extinct",         "severity": 6, "at_risk": True,  "description": "EGIDS: >=9; UNESCO: extinct; ElCat: extinct"},
+    "aes-not_endangered": {
+        "label": "Not Endangered",
+        "severity": 1,
+        "at_risk": False,
+        "description": "EGIDS: <=6a; UNESCO: safe; ElCat: safe",
+    },
+    "aes-threatened": {
+        "label": "Threatened",
+        "severity": 2,
+        "at_risk": True,
+        "description": "EGIDS: 6b; UNESCO: vulnerable; ElCat: vulnerable",
+    },
+    "aes-shifting": {
+        "label": "Shifting",
+        "severity": 3,
+        "at_risk": True,
+        "description": "EGIDS: 7; UNESCO: definitely endangered; ElCat: definitely endangered",
+    },
+    "aes-moribund": {
+        "label": "Moribund",
+        "severity": 4,
+        "at_risk": True,
+        "description": "EGIDS: 8a; UNESCO: severely endangered; ElCat: severely endangered",
+    },
+    "aes-nearly_extinct": {
+        "label": "Nearly Extinct",
+        "severity": 5,
+        "at_risk": True,
+        "description": "EGIDS: 8b; UNESCO: critically endangered; ElCat: critically endangered",
+    },
+    "aes-extinct": {
+        "label": "Extinct",
+        "severity": 6,
+        "at_risk": True,
+        "description": "EGIDS: >=9; UNESCO: extinct; ElCat: extinct",
+    },
 }
 
 
@@ -72,13 +102,7 @@ def _with_endangerment(lang: Language, session: Session) -> dict:
     summary="Explore the world’s languages",
     openapi_extra={
         "responses": {
-            "200": {
-                "content": {
-                    "application/json": {
-                        "example": [_LANGUAGE_EXAMPLE]
-                    }
-                }
-            }
+            "200": {"content": {"application/json": {"example": [_LANGUAGE_EXAMPLE]}}}
         }
     },
 )
@@ -157,13 +181,7 @@ def get_languages_map(
     summary="Search languages by name",
     openapi_extra={
         "responses": {
-            "200": {
-                "content": {
-                    "application/json": {
-                        "example": [_LANGUAGE_EXAMPLE]
-                    }
-                }
-            }
+            "200": {"content": {"application/json": {"example": [_LANGUAGE_EXAMPLE]}}}
         }
     },
 )
@@ -188,13 +206,7 @@ def search_languages(
     summary="Discover a random language",
     openapi_extra={
         "responses": {
-            "200": {
-                "content": {
-                    "application/json": {
-                        "example": _LANGUAGE_EXAMPLE
-                    }
-                }
-            }
+            "200": {"content": {"application/json": {"example": _LANGUAGE_EXAMPLE}}}
         }
     },
 )
@@ -211,13 +223,7 @@ def get_random_language(session: Session = Depends(get_session)):
     summary="Look up a language by ISO 639-3 code",
     openapi_extra={
         "responses": {
-            "200": {
-                "content": {
-                    "application/json": {
-                        "example": _LANGUAGE_EXAMPLE
-                    }
-                }
-            }
+            "200": {"content": {"application/json": {"example": _LANGUAGE_EXAMPLE}}}
         }
     },
 )
@@ -236,13 +242,7 @@ def get_language_by_iso(iso_code: str, session: Session = Depends(get_session)):
     summary="Get a language by Glottolog ID",
     openapi_extra={
         "responses": {
-            "200": {
-                "content": {
-                    "application/json": {
-                        "example": _LANGUAGE_EXAMPLE
-                    }
-                }
-            }
+            "200": {"content": {"application/json": {"example": _LANGUAGE_EXAMPLE}}}
         }
     },
 )
@@ -305,10 +305,26 @@ def get_language_names(language_id: str, session: Session = Depends(get_session)
                             "language_id": "stan1295",
                             "language_name": "Somali",
                             "classification": [
-                                {"id": "afro1255", "name": "Afro-Asiatic", "level": "family"},
-                                {"id": "cush1243", "name": "Cushitic", "level": "family"},
-                                {"id": "east2699", "name": "East Cushitic", "level": "family"},
-                                {"id": "stan1295", "name": "Somali", "level": "language"},
+                                {
+                                    "id": "afro1255",
+                                    "name": "Afro-Asiatic",
+                                    "level": "family",
+                                },
+                                {
+                                    "id": "cush1243",
+                                    "name": "Cushitic",
+                                    "level": "family",
+                                },
+                                {
+                                    "id": "east2699",
+                                    "name": "East Cushitic",
+                                    "level": "family",
+                                },
+                                {
+                                    "id": "stan1295",
+                                    "name": "Somali",
+                                    "level": "language",
+                                },
                             ],
                         }
                     }
@@ -451,7 +467,9 @@ def get_language_parameters(language_id: str, session: Session = Depends(get_ses
         }
     },
 )
-def get_language_endangerment(language_id: str, session: Session = Depends(get_session)):
+def get_language_endangerment(
+    language_id: str, session: Session = Depends(get_session)
+):
     lang = session.get(Language, language_id)
     if not lang:
         raise HTTPException(status_code=404, detail="Language not found")
@@ -593,13 +611,7 @@ def get_family(family_id: str, session: Session = Depends(get_session)):
     summary="List languages within a family",
     openapi_extra={
         "responses": {
-            "200": {
-                "content": {
-                    "application/json": {
-                        "example": [_LANGUAGE_EXAMPLE]
-                    }
-                }
-            }
+            "200": {"content": {"application/json": {"example": [_LANGUAGE_EXAMPLE]}}}
         }
     },
 )
@@ -663,13 +675,7 @@ def get_macroareas(session: Session = Depends(get_session)):
     summary="Browse languages by macroarea",
     openapi_extra={
         "responses": {
-            "200": {
-                "content": {
-                    "application/json": {
-                        "example": [_LANGUAGE_EXAMPLE]
-                    }
-                }
-            }
+            "200": {"content": {"application/json": {"example": [_LANGUAGE_EXAMPLE]}}}
         }
     },
 )
@@ -859,7 +865,9 @@ def endangerment_breakdown(session: Session = Depends(get_session)):
     },
 )
 def underdocumented_languages(
-    before: int = Query(1970, description="Only include languages last documented before this year."),
+    before: int = Query(
+        1970, description="Only include languages last documented before this year."
+    ),
     session: Session = Depends(get_session),
 ):
     at_risk_code_ids = [k for k, v in AES_LEVELS.items() if v["at_risk"]]
@@ -884,14 +892,16 @@ def underdocumented_languages(
             continue
 
         aes = AES_LEVELS[pv.code_id]
-        result.append({
-            "language_id": lang.id,
-            "name": lang.name,
-            "macroarea": lang.macroarea,
-            "last_documented": lang.last_year_of_documentation,
-            "years_of_silence": CURRENT_YEAR - lang.last_year_of_documentation,
-            "endangerment": aes["label"],
-        })
+        result.append(
+            {
+                "language_id": lang.id,
+                "name": lang.name,
+                "macroarea": lang.macroarea,
+                "last_documented": lang.last_year_of_documentation,
+                "years_of_silence": CURRENT_YEAR - lang.last_year_of_documentation,
+                "endangerment": aes["label"],
+            }
+        )
 
     result.sort(key=lambda x: x["last_documented"])
 

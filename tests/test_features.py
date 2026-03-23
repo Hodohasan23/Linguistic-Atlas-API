@@ -104,9 +104,7 @@ def test_language_names_endpoint():
     response = client.get("/languages/random", headers=API_KEY)
     if response.status_code == 200:
         language_id = response.json()["id"]
-        names_response = client.get(
-            f"/languages/{language_id}/names", headers=API_KEY
-        )
+        names_response = client.get(f"/languages/{language_id}/names", headers=API_KEY)
         assert names_response.status_code in [200, 404]
 
 

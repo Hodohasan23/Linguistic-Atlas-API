@@ -7,7 +7,13 @@ from pydantic import BaseModel, ConfigDict
 from sqlmodel import Session, select
 
 from app.db.session import get_session
-from app.models.models import LanguageSet, LanguageSetItem, Language, ParameterValue, LanguageName
+from app.models.models import (
+    LanguageSet,
+    LanguageSetItem,
+    Language,
+    ParameterValue,
+    LanguageName,
+)
 from app.core.security import verify_api_key, require_user, require_admin
 
 router = APIRouter(
@@ -18,11 +24,11 @@ router = APIRouter(
 
 AES_LEVELS = {
     "aes-not_endangered": {"label": "Not Endangered", "severity": 1, "at_risk": False},
-    "aes-threatened":     {"label": "Threatened",     "severity": 2, "at_risk": True},
-    "aes-shifting":       {"label": "Shifting",        "severity": 3, "at_risk": True},
-    "aes-moribund":       {"label": "Moribund",        "severity": 4, "at_risk": True},
-    "aes-nearly_extinct": {"label": "Nearly Extinct",  "severity": 5, "at_risk": True},
-    "aes-extinct":        {"label": "Extinct",         "severity": 6, "at_risk": True},
+    "aes-threatened": {"label": "Threatened", "severity": 2, "at_risk": True},
+    "aes-shifting": {"label": "Shifting", "severity": 3, "at_risk": True},
+    "aes-moribund": {"label": "Moribund", "severity": 4, "at_risk": True},
+    "aes-nearly_extinct": {"label": "Nearly Extinct", "severity": 5, "at_risk": True},
+    "aes-extinct": {"label": "Extinct", "severity": 6, "at_risk": True},
 }
 
 EXTINCTION_RISK_CODES = {"aes-moribund", "aes-nearly_extinct", "aes-extinct"}
@@ -55,6 +61,7 @@ def _get_aes_code_id(language_id: str, session: Session) -> Optional[str]:
 
 
 # SCHEMAS
+
 
 class TestimonyCreate(BaseModel):
     model_config = ConfigDict(
@@ -98,6 +105,7 @@ class TestimonyItemCreate(BaseModel):
 
 
 # CRUD
+
 
 @router.post(
     "",
@@ -201,8 +209,8 @@ def delete_testimony(
     return {"message": "Testimony deleted"}
 
 
-
 # ITEMS
+
 
 @router.post(
     "/{set_id}/languages",
@@ -228,7 +236,9 @@ def add_language(
     ).first()
 
     if exists:
-        raise HTTPException(status_code=400, detail="Language already in this Testimony")
+        raise HTTPException(
+            status_code=400, detail="Language already in this Testimony"
+        )
 
     item = LanguageSetItem(language_set_id=set_id, language_id=payload.language_id)
     session.add(item)
@@ -265,16 +275,18 @@ def list_languages(set_id: int, session: Session = Depends(get_session)):
             select(LanguageName).where(LanguageName.language_id == lang.id)
         ).all()
 
-        result.append({
-            "item_id": item.id,
-            "language_id": lang.id,
-            "name": lang.name,
-            "macroarea": lang.macroarea,
-            "level": lang.level,
-            "endangerment": aes["label"] if aes else "Unknown",
-            "at_risk": aes["at_risk"] if aes else None,
-            "recorded_names_count": len(name_count),
-        })
+        result.append(
+            {
+                "item_id": item.id,
+                "language_id": lang.id,
+                "name": lang.name,
+                "macroarea": lang.macroarea,
+                "level": lang.level,
+                "endangerment": aes["label"] if aes else "Unknown",
+                "at_risk": aes["at_risk"] if aes else None,
+                "recorded_names_count": len(name_count),
+            }
+        )
 
     return result
 
@@ -288,7 +300,9 @@ def remove_language(set_id: int, item_id: int, session: Session = Depends(get_se
     item = session.get(LanguageSetItem, item_id)
 
     if not item or item.language_set_id != set_id:
-        raise HTTPException(status_code=404, detail="Language not found in this Testimony")
+        raise HTTPException(
+            status_code=404, detail="Language not found in this Testimony"
+        )
 
     session.delete(item)
     session.commit()
@@ -297,6 +311,7 @@ def remove_language(set_id: int, item_id: int, session: Session = Depends(get_se
 
 
 # INSIGHTS
+
 
 @router.get(
     "/{set_id}/insights",
@@ -340,12 +355,14 @@ def get_testimony_insights(set_id: int, session: Session = Depends(get_session))
             if AES_LEVELS[code_id]["at_risk"]:
                 at_risk.append(lang.name)
             if code_id in EXTINCTION_RISK_CODES:
-                extinction_risk.append({
-                    "language_id": lang.id,
-                    "name": lang.name,
-                    "status": AES_LEVELS[code_id]["label"],
-                    "macroarea": lang.macroarea,
-                })
+                extinction_risk.append(
+                    {
+                        "language_id": lang.id,
+                        "name": lang.name,
+                        "status": AES_LEVELS[code_id]["label"],
+                        "macroarea": lang.macroarea,
+                    }
+                )
         else:
             endangerment_counts["Unknown"] += 1
 
@@ -369,16 +386,22 @@ def get_testimony_insights(set_id: int, session: Session = Depends(get_session))
 
     obscurity = []
     for lang in languages:
-        name_count = len(session.exec(
-            select(LanguageName).where(LanguageName.language_id == lang.id)
-        ).all())
+        name_count = len(
+            session.exec(
+                select(LanguageName).where(LanguageName.language_id == lang.id)
+            ).all()
+        )
         obscurity.append((lang, name_count))
 
     obscurity.sort(key=lambda x: x[1])
     most_obscure = obscurity[0] if obscurity else None
 
     # languages with no known relatives — if lost, an entire branch disappears
-    isolates = [lang for lang in languages if not lang.family_id and (lang.is_isolate or lang.level == "language")]
+    isolates = [
+        lang
+        for lang in languages
+        if not lang.family_id and (lang.is_isolate or lang.level == "language")
+    ]
 
     return {
         "testimony": testimony.title,
@@ -400,7 +423,10 @@ def get_testimony_insights(set_id: int, session: Session = Depends(get_session))
         },
         "language_isolates": {
             "count": len(isolates),
-            "languages": [{"id": lang.id, "name": lang.name, "macroarea": lang.macroarea} for lang in isolates],
+            "languages": [
+                {"id": lang.id, "name": lang.name, "macroarea": lang.macroarea}
+                for lang in isolates
+            ],
             "note": "Isolates have no known relatives — if lost, their entire branch of human language disappears.",
         },
         "most_undocumented": {

@@ -29,12 +29,14 @@ def seed_admin():
     with Session(get_engine()) as session:
         existing = session.exec(select(User).where(User.role == "ADMIN")).first()
         if not existing:
-            session.add(User(
-                email=admin_email,
-                username="admin",
-                password_hash=hash_password(admin_password),
-                role="ADMIN",
-            ))
+            session.add(
+                User(
+                    email=admin_email,
+                    username="admin",
+                    password_hash=hash_password(admin_password),
+                    role="ADMIN",
+                )
+            )
             session.commit()
             print(f"Admin account created: {admin_email}")
         else:
@@ -44,7 +46,7 @@ def seed_admin():
 app = FastAPI(
     title="Linguistic Atlas API",
     description="A data-driven API for exploring, analysing, and preserving the world’s languages. Discover linguistic relationships, uncover hidden patterns, and interact with the Atlas through intelligent insights.",
-    version="1.0.0"
+    version="1.0.0",
 )
 
 app.add_middleware(

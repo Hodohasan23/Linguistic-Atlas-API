@@ -51,4 +51,3 @@ def compare_language_sets(session: Session, set1_id: int, set2_id: int):
         "unique_set2": len(unique2),
         "overlap_ratio": round(overlap_ratio, 2),
     }
-

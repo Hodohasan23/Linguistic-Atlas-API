@@ -148,14 +148,20 @@ def compare_sets(set1_id: int, set2_id: int, session: Session = Depends(get_sess
                                     "name": "Basque",
                                     "coverage": 3,
                                     "is_isolate": True,
-                                    "reasons": ["Language isolate", "Very low parameter coverage"],
+                                    "reasons": [
+                                        "Language isolate",
+                                        "Very low parameter coverage",
+                                    ],
                                 },
                                 {
                                     "language_id": "unkn1234",
                                     "name": "Unknown Language",
                                     "coverage": 0,
                                     "is_isolate": False,
-                                    "reasons": ["Missing family classification", "Very low parameter coverage"],
+                                    "reasons": [
+                                        "Missing family classification",
+                                        "Very low parameter coverage",
+                                    ],
                                 },
                             ],
                         }
@@ -192,13 +198,15 @@ def get_outliers(session: Session = Depends(get_session)):
             reasons.append("Very low parameter coverage")
 
         if reasons:
-            outliers.append({
-                "language_id": lang.id,
-                "name": lang.name,
-                "coverage": coverage,
-                "is_isolate": lang.is_isolate,
-                "reasons": reasons,
-            })
+            outliers.append(
+                {
+                    "language_id": lang.id,
+                    "name": lang.name,
+                    "coverage": coverage,
+                    "is_isolate": lang.is_isolate,
+                    "reasons": reasons,
+                }
+            )
 
     return {
         "count": len(outliers),
@@ -240,10 +248,12 @@ def get_lineage(language_id: str, session: Session = Depends(get_session)):
 
     # walk up the tree until no parent exists
     while current:
-        lineage.append({
-            "id": current.id,
-            "name": current.name,
-        })
+        lineage.append(
+            {
+                "id": current.id,
+                "name": current.name,
+            }
+        )
 
         if not current.family_id:
             break
