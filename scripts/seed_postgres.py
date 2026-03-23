@@ -1,6 +1,8 @@
 import pandas as pd
 from sqlmodel import Session
-from app.database import engine
+from dotenv import load_dotenv
+
+from app.db.session import get_engine
 from app.models.models import (
     Language,
     LanguageName,
@@ -10,6 +12,11 @@ from app.models.models import (
     Media,
     Tree,
 )
+
+# THEN load env
+load_dotenv()
+
+engine = get_engine()
 
 LANGUAGES_CSV = "data/raw/languages.csv"
 NAMES_CSV = "data/raw/names.csv"
