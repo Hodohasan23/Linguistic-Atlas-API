@@ -34,11 +34,14 @@ def register(payload: AuthRequest, session: Session = Depends(get_session)):
     if existing:
         raise HTTPException(status_code=400, detail="User exists")
 
+    first_user = session.exec(select(User)).first()
+    role = "ADMIN" if first_user is None else "USER"
+
     user = User(
         email=payload.email,
         username=payload.email,
         password_hash=hash_password(payload.password),
-        role="USER",
+        role=role,
     )
 
     session.add(user)
