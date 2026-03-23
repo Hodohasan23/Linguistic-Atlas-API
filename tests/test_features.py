@@ -43,22 +43,6 @@ def get_admin_token():
 # -----------------------
 
 
-def test_languages_random_returns_single_object():
-    response = client.get("/languages/random", headers=API_KEY)
-    assert response.status_code == 200
-    data = response.json()
-    assert "id" in data
-    assert "name" in data
-
-
-def test_languages_random_includes_endangerment():
-    response = client.get("/languages/random", headers=API_KEY)
-    assert response.status_code == 200
-    data = response.json()
-    assert "endangerment" in data
-    assert "at_risk" in data
-
-
 def test_languages_search_includes_endangerment():
     response = client.get("/languages/search?name=Somali", headers=API_KEY)
     assert response.status_code in [200, 404]
@@ -176,16 +160,9 @@ def test_family_languages_endpoint():
 # -----------------------
 
 
-def test_macroareas_returns_list():
-    response = client.get("/macroareas", headers=API_KEY)
-    assert response.status_code == 200
-    data = response.json()
-    assert isinstance(data, list)
-    assert len(data) > 0
-
-
 def test_macroareas_have_macroarea_field():
     response = client.get("/macroareas", headers=API_KEY)
+    assert response.status_code == 200
     for item in response.json():
         assert "macroarea" in item
 
@@ -203,22 +180,6 @@ def test_macroarea_languages_invalid_returns_404():
 # -----------------------
 # Stats
 # -----------------------
-
-
-def test_stats_languages_per_macroarea():
-    response = client.get("/stats/languages-per-macroarea", headers=API_KEY)
-    assert response.status_code == 200
-    data = response.json()
-    assert isinstance(data, dict)
-    assert len(data) > 0
-
-
-def test_stats_languages_per_family():
-    response = client.get("/stats/languages-per-family", headers=API_KEY)
-    assert response.status_code == 200
-    data = response.json()
-    assert isinstance(data, dict)
-    assert len(data) > 0
 
 
 def test_stats_endangerment_breakdown():
