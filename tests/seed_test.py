@@ -9,6 +9,7 @@ client = TestClient(app)
 
 API_KEY = {"X-API-Key": "secret123"}
 
+
 def test_languages_random_returns_single_object():
     response = client.get("/languages/random", headers=API_KEY)
     assert response.status_code in [200, 404]  # 404 is valid if db is empty
